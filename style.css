@@ -1,0 +1,640 @@
+﻿```css
+/* =========================================================
+   CONFIGURACIÓN GENERAL
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --orange-1: #ff7b22;
+    --orange-2: #f4511e;
+    --orange-3: #ff9f43;
+
+    --red-1: #d84315;
+    --red-2: #b71c1c;
+    --red-3: #8e1b1b;
+
+    --petrol: #07575b;
+    --petrol-dark: #043f42;
+    --petrol-light: #0b7375;
+
+    --text: #fff4df;
+    --text-dark: #35130b;
+    --yellow: #ffd166;
+}
+
+/* =========================================================
+   BODY
+   ========================================================= */
+
+body {
+    min-height: 100vh;
+    min-height: 100dvh;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    color: var(--text);
+
+    overflow-x: hidden;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--orange-1),
+            var(--red-1),
+            var(--red-2)
+        );
+
+    transition:
+        background 0.8s ease;
+}
+
+
+/* =========================================================
+   CONTENEDOR PRINCIPAL
+   ========================================================= */
+
+#app {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+/* =========================================================
+   PANTALLA
+   ========================================================= */
+
+.screen {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 40px 20px;
+
+    opacity: 1;
+
+    transition:
+        opacity 0.35s ease,
+        transform 0.35s ease;
+}
+
+.screen.fade-out {
+    opacity: 0;
+    transform: translateY(15px);
+}
+
+
+/* =========================================================
+   CONTENIDO
+   ========================================================= */
+
+.content {
+    width: min(900px, 100%);
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    text-align: center;
+
+    gap: 28px;
+}
+
+
+/* =========================================================
+   TEXTO PRINCIPAL
+   ========================================================= */
+
+.main-text {
+    max-width: 850px;
+
+    font-size: clamp(2rem, 5vw, 4.2rem);
+    line-height: 1.12;
+    font-weight: 700;
+
+    text-wrap: balance;
+
+    text-shadow:
+        0 4px 0 rgba(100, 20, 0, 0.18);
+}
+
+
+/* =========================================================
+   INSTRUCCIONES
+   ========================================================= */
+
+.instructions {
+    max-width: 650px;
+
+    font-size: clamp(1rem, 2.5vw, 1.35rem);
+    line-height: 1.5;
+
+    color: var(--text);
+
+    opacity: 0.95;
+}
+
+.instructions strong {
+    color: var(--yellow);
+}
+
+
+/* =========================================================
+   BOTONES
+   ========================================================= */
+
+button {
+    font-family: inherit;
+
+    border: none;
+    outline: none;
+
+    cursor: pointer;
+
+    background: var(--petrol);
+    color: #f4ffff;
+
+    font-size: 1.05rem;
+    font-weight: 700;
+
+    padding: 15px 28px;
+
+    min-height: 52px;
+
+    border-radius: 12px;
+
+    box-shadow:
+        0 5px 0 var(--petrol-dark);
+
+    transition:
+        transform 0.12s ease,
+        background 0.12s ease,
+        box-shadow 0.12s ease;
+}
+
+button:hover {
+    background: var(--petrol-light);
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 7px 0 var(--petrol-dark);
+}
+
+button:active {
+    transform: translateY(3px);
+
+    box-shadow:
+        0 2px 0 var(--petrol-dark);
+}
+
+button:disabled {
+    cursor: default;
+    opacity: 0.5;
+    transform: none;
+}
+
+
+/* =========================================================
+   GRUPOS DE BOTONES
+   ========================================================= */
+
+.button-group {
+    display: flex;
+    flex-wrap: wrap;
+
+    justify-content: center;
+
+    gap: 14px;
+
+    width: 100%;
+}
+
+
+/* =========================================================
+   MENSAJES
+   ========================================================= */
+
+.feedback {
+    min-height: 30px;
+
+    font-size: 1.1rem;
+    font-weight: 700;
+
+    color: var(--yellow);
+}
+
+
+/* =========================================================
+   ESTADO / CUENTA ATRÁS
+   ========================================================= */
+
+.countdown {
+    font-size: clamp(3rem, 12vw, 7rem);
+
+    font-weight: 900;
+
+    color: var(--yellow);
+
+    line-height: 1;
+}
+
+.hidden {
+    display: none !important;
+}
+
+
+/* =========================================================
+   ACTIVIDAD 3 - ENCONTRAR BOTÓN
+   ========================================================= */
+
+.button-maze {
+    position: relative;
+
+    width: min(650px, 100%);
+    height: 280px;
+
+    border-radius: 20px;
+
+    background: rgba(90, 20, 10, 0.18);
+}
+
+.fake-button {
+    position: absolute;
+
+    padding: 10px 18px;
+
+    min-height: auto;
+
+    font-size: 0.9rem;
+
+    box-shadow: none;
+}
+
+.fake-button:hover {
+    box-shadow: none;
+}
+
+
+/* =========================================================
+   ACTIVIDAD 4 - MEMORIA
+   ========================================================= */
+
+.memory-grid {
+    display: grid;
+
+    grid-template-columns: repeat(2, 100px);
+    gap: 14px;
+
+    justify-content: center;
+}
+
+.memory-tile {
+    width: 100px;
+    height: 100px;
+
+    padding: 0;
+
+    font-size: 2rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.memory-tile.active {
+    background: var(--yellow);
+    color: var(--text-dark);
+}
+
+
+/* =========================================================
+   ACTIVIDAD 6 - REACCIÓN
+   ========================================================= */
+
+.reaction-area {
+    position: relative;
+
+    width: min(700px, 100%);
+    height: 300px;
+
+    border-radius: 20px;
+
+    background: rgba(80, 10, 5, 0.2);
+
+    overflow: hidden;
+}
+
+.reaction-target {
+    position: absolute;
+
+    width: 70px;
+    height: 70px;
+
+    min-height: 0;
+
+    padding: 0;
+
+    border-radius: 50%;
+
+    display: none;
+
+    transform: translate(-50%, -50%);
+
+    box-shadow:
+        0 0 0 8px rgba(255, 209, 102, 0.15),
+        0 0 30px rgba(255, 209, 102, 0.3);
+}
+
+
+/* =========================================================
+   ACTIVIDAD 7 - CÓDIGO
+   ========================================================= */
+
+.number-display {
+    font-size: 2rem;
+    font-weight: 900;
+
+    min-height: 40px;
+
+    color: var(--yellow);
+}
+
+.number-pad {
+    display: grid;
+
+    grid-template-columns: repeat(3, 70px);
+
+    gap: 10px;
+
+    justify-content: center;
+}
+
+.number-pad button {
+    min-width: 70px;
+}
+
+
+/* =========================================================
+   ACTIVIDAD 8 - ANOMALÍA
+   ========================================================= */
+
+.anomaly-grid {
+    display: grid;
+
+    grid-template-columns: repeat(4, 80px);
+
+    gap: 12px;
+
+    justify-content: center;
+}
+
+.anomaly-item {
+    width: 80px;
+    height: 80px;
+
+    padding: 0;
+
+    font-size: 2rem;
+}
+
+
+/* =========================================================
+   ACTIVIDAD 9 - CASA
+   ========================================================= */
+
+.house-grid {
+    display: grid;
+
+    grid-template-columns: repeat(7, 38px);
+    grid-template-rows: repeat(5, 38px);
+
+    gap: 4px;
+
+    justify-content: center;
+
+    padding: 10px;
+
+    background: rgba(80, 10, 5, 0.25);
+
+    border-radius: 12px;
+}
+
+.house-cell {
+    width: 38px;
+    height: 38px;
+
+    padding: 0;
+
+    min-height: 0;
+
+    border-radius: 5px;
+
+    background: rgba(255, 255, 255, 0.18);
+
+    box-shadow: none;
+}
+
+.house-cell:hover {
+    box-shadow: none;
+}
+
+.house-cell.built {
+    background: var(--petrol);
+}
+
+
+/* =========================================================
+   ACTIVIDAD 10 - RECUERDO
+   ========================================================= */
+
+.remember-word {
+    font-size: clamp(2rem, 8vw, 4rem);
+
+    font-weight: 900;
+
+    color: var(--yellow);
+
+    min-height: 70px;
+}
+
+
+/* =========================================================
+   ACTIVIDAD 12 - BUG
+   ========================================================= */
+
+.glitch {
+    animation: glitch 0.18s infinite;
+}
+
+@keyframes glitch {
+    0% {
+        transform: translate(0);
+    }
+
+    25% {
+        transform: translate(3px, -2px);
+    }
+
+    50% {
+        transform: translate(-2px, 2px);
+    }
+
+    75% {
+        transform: translate(2px, 1px);
+    }
+
+    100% {
+        transform: translate(0);
+    }
+}
+
+
+/* =========================================================
+   ACTIVIDAD 13 - PRECISIÓN
+   ========================================================= */
+
+.precision-number {
+    font-size: clamp(4rem, 15vw, 9rem);
+
+    font-weight: 900;
+
+    color: var(--yellow);
+}
+
+
+/* =========================================================
+   ÚLTIMA PANTALLA
+   ========================================================= */
+
+.thanks {
+    font-size: clamp(4rem, 15vw, 10rem);
+
+    font-weight: 900;
+
+    color: var(--yellow);
+
+    line-height: 1;
+
+    text-shadow:
+        0 8px 0 rgba(120, 20, 0, 0.25);
+}
+
+
+/* =========================================================
+   MÓVIL
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    .screen {
+        padding: 30px 16px;
+    }
+
+    .content {
+        gap: 22px;
+    }
+
+    button {
+        width: auto;
+
+        min-height: 54px;
+
+        padding: 14px 20px;
+
+        font-size: 1rem;
+    }
+
+    .button-group {
+        gap: 10px;
+    }
+
+    .memory-grid {
+        grid-template-columns: repeat(2, 80px);
+    }
+
+    .memory-tile {
+        width: 80px;
+        height: 80px;
+    }
+
+    .anomaly-grid {
+        grid-template-columns: repeat(4, 60px);
+        gap: 8px;
+    }
+
+    .anomaly-item {
+        width: 60px;
+        height: 60px;
+    }
+
+    .house-grid {
+        grid-template-columns: repeat(7, 34px);
+        grid-template-rows: repeat(5, 34px);
+    }
+
+    .house-cell {
+        width: 34px;
+        height: 34px;
+    }
+
+    .reaction-area {
+        height: 260px;
+    }
+
+    .number-pad {
+        grid-template-columns: repeat(3, 60px);
+    }
+
+    .number-pad button {
+        min-width: 60px;
+    }
+}
+
+
+/* =========================================================
+   PANTALLAS MUY PEQUEÑAS
+   ========================================================= */
+
+@media (max-width: 380px) {
+
+    .screen {
+        padding: 25px 12px;
+    }
+
+    .anomaly-grid {
+        grid-template-columns: repeat(4, 52px);
+    }
+
+    .anomaly-item {
+        width: 52px;
+        height: 52px;
+    }
+
+    .house-grid {
+        grid-template-columns: repeat(7, 30px);
+        grid-template-rows: repeat(5, 30px);
+    }
+
+    .house-cell {
+        width: 30px;
+        height: 30px;
+    }
+}
+```
