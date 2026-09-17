@@ -1,1044 +1,1689 @@
 ﻿
 /* =========================================================
-   TEXTOS
+   ELEMENTOS
    ========================================================= */
 
-const texts = [
-    "Hola.",
-    "¿Qué tal?",
-    "Gracias por abrir la página.",
-    "Y gracias tambien por querer seguir haciendo las actividades para ver el texto completo",
-    "La verdad es que no sabía como llamar tu atención a algo tan absurdo.",
-    "Así que he inventado esto para poder entretenerme y entretenerte.",
-    "Es divertido ¿Verdad?",
-    "Casi tanto como llevar un hospital de anomalías.",
-    "O casi tanto como hacer una casa en un server vacío.",
-    "Me he acordado mucho de esas cosas mientras hacía esto...",
-    "Espero haberte hecho recordar eso a ti también.",
-    "Este es mi primer experimento web.",
-    "Y espero que te haya gustado."
+const introScreen =
+    document.getElementById("introScreen");
+
+const gameScreen =
+    document.getElementById("gameScreen");
+
+const continueButton =
+    document.getElementById("continueButton");
+
+const canvas =
+    document.getElementById("gameCanvas");
+
+const ctx =
+    canvas.getContext("2d");
+
+const message =
+    document.getElementById("message");
+
+const waterFill =
+    document.getElementById("waterFill");
+
+
+/* =========================================================
+   CANVAS PIXEL ART
+   ========================================================= */
+
+const pixelCanvas =
+    document.createElement("canvas");
+
+const pixelCtx =
+    pixelCanvas.getContext("2d");
+
+const PIXEL_WIDTH = 320;
+const PIXEL_HEIGHT = 180;
+
+pixelCanvas.width = PIXEL_WIDTH;
+pixelCanvas.height = PIXEL_HEIGHT;
+
+
+/*
+ * Evitar suavizado.
+ */
+
+pixelCtx.imageSmoothingEnabled = false;
+ctx.imageSmoothingEnabled = false;
+
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+
+let width = 0;
+let height = 0;
+
+let gameStarted = false;
+
+let flowersPlanted = false;
+
+let watering = false;
+
+let pointerX = 0;
+let pointerY = 0;
+
+
+/* =========================================================
+   FLORES
+   ========================================================= */
+
+const flowers = [];
+
+
+/*
+ * Colores naturales.
+ */
+
+const flowerColors = [
+    "#e53935",
+    "#ef5350",
+    "#f06292",
+    "#ec407a",
+    "#ff7043",
+    "#ff8a65",
+    "#ffd54f",
+    "#fff3c4",
+    "#f5f5dc",
+    "#ce93d8",
+    "#ab47bc",
+    "#ba68c8"
 ];
 
 
 /* =========================================================
-   VARIABLES
+   RESIZE
    ========================================================= */
 
-let currentScreen = 0;
+function resizeCanvas() {
 
-const screen = document.getElementById("screen");
-const content = document.getElementById("content");
+    const ratio =
+        Math.min(
+            window.devicePixelRatio || 1,
+            2
+        );
+
+    width =
+        window.innerWidth;
+
+    height =
+        window.innerHeight;
+
+    canvas.width =
+        width * ratio;
+
+    canvas.height =
+        height * ratio;
+
+    canvas.style.width =
+        width + "px";
+
+    canvas.style.height =
+        height + "px";
+
+    ctx.setTransform(
+        ratio,
+        0,
+        0,
+        ratio,
+        0,
+        0
+    );
+
+    ctx.imageSmoothingEnabled = false;
+}
+
+window.addEventListener(
+    "resize",
+    resizeCanvas
+);
 
 
 /* =========================================================
-   COLORES DE FONDO
-   Cada pantalla puede tener una combinación ligeramente
-   diferente de naranja/rojo.
+   UTILIDADES
    ========================================================= */
 
-const backgrounds = [
-    ["#ff7b22", "#d84315"],
-    ["#ff9f43", "#c62828"],
-    ["#f4511e", "#b71c1c"],
-    ["#ff8a3d", "#9e1b1b"],
-    ["#ff7043", "#8e1b1b"],
-    ["#ff9800", "#c62828"],
-    ["#ff6f00", "#b71c1c"],
-    ["#f4511e", "#7f1d1d"],
-    ["#ff8a65", "#a91d1d"],
-    ["#ff7b22", "#9b2226"],
-    ["#f4511e", "#8e1b1b"],
-    ["#ff9800", "#a51c30"],
-    ["#ff7043", "#7f1d1d"]
-];
+function random(min, max) {
+
+    return Math.random() *
+        (max - min) +
+        min;
+}
 
 
-/* =========================================================
-   CAMBIAR FONDO
-   ========================================================= */
+function randomInt(min, max) {
 
-function updateBackground() {
+    return Math.floor(
+        random(min, max + 1)
+    );
+}
 
-    const colors = backgrounds[currentScreen];
 
-    document.body.style.background =
-        `linear-gradient(135deg, ${colors[0]}, ${colors[1]})`;
+function clamp(value, min, max) {
+
+    return Math.max(
+        min,
+        Math.min(max, value)
+    );
 }
 
 
 /* =========================================================
-   MOSTRAR PANTALLA
+   INICIO
    ========================================================= */
 
-function renderScreen() {
-
-    screen.classList.add("fade-out");
-
-    setTimeout(() => {
-
-        content.innerHTML = "";
-
-        updateBackground();
-
-        const text = document.createElement("div");
-
-        text.className = "main-text";
-        text.textContent = texts[currentScreen];
-
-        content.appendChild(text);
+continueButton.addEventListener(
+    "click",
+    startGame
+);
 
 
-        /*
-         * La última pantalla no tiene actividad.
-         */
+function startGame() {
 
-        if (currentScreen === texts.length - 1) {
+    introScreen.style.display =
+        "none";
 
-            const thanks = document.createElement("div");
+    gameScreen.classList.remove(
+        "hidden"
+    );
 
-            thanks.className = "thanks";
-            thanks.textContent = "GRACIAS";
+    gameStarted = true;
 
-            content.appendChild(thanks);
+    resizeCanvas();
 
-        } else {
+    requestAnimationFrame(gameLoop);
+}
+
+
+/* =========================================================
+   CREAR MUCHAS FLORES
+   ========================================================= */
+
+function plantFlowers() {
+
+    flowers.length = 0;
+
+    /*
+     * Entre 20 y 26 flores.
+     */
+
+    const amount =
+        randomInt(20, 26);
+
+    for (
+        let i = 0;
+        i < amount;
+        i++
+    ) {
+
+        flowers.push({
 
             /*
-             * Cada pantalla tiene su propia actividad.
+             * Posición horizontal.
+             *
+             * Se concentra en la zona de
+             * la maceta pero tiene pequeñas
+             * variaciones.
              */
 
-            createActivity(currentScreen);
+            x:
+                random(
+                    0.20,
+                    0.80
+                ),
 
-        }
+            /*
+             * Cada planta tiene una altura
+             * ligeramente distinta.
+             */
 
-        screen.classList.remove("fade-out");
+            maxHeight:
+                random(
+                    0.70,
+                    1.12
+                ),
 
-    }, 350);
+            /*
+             * Crecimiento inicial.
+             */
+
+            growth: 0,
+
+            /*
+             * Tamaño de la flor.
+             */
+
+            size:
+                random(
+                    0.75,
+                    1.15
+                ),
+
+            /*
+             * Color.
+             */
+
+            color:
+                flowerColors[
+                    randomInt(
+                        0,
+                        flowerColors.length - 1
+                    )
+                ],
+
+            /*
+             * Cada flor se mueve ligeramente
+             * diferente a las demás.
+             */
+
+            windOffset:
+                random(
+                    0,
+                    Math.PI * 2
+                ),
+
+            windSpeed:
+                random(
+                    0.8,
+                    1.2
+                ),
+
+            /*
+             * Inclinación natural.
+             */
+
+            lean:
+                random(
+                    -0.12,
+                    0.12
+                )
+        });
+    }
+
+    flowersPlanted = true;
+
+    message.textContent =
+        "¡Eso son muchas flores! Mantén pulsado sobre la tierra para regarlas.";
 }
 
 
 /* =========================================================
-   IR A LA SIGUIENTE PANTALLA
+   LOOP
    ========================================================= */
 
-function nextScreen() {
+function gameLoop(time) {
 
-    if (currentScreen >= texts.length - 1) {
+    if (!gameStarted) {
         return;
     }
 
-    currentScreen++;
+    updatePlants();
 
-    renderScreen();
+    drawScene(time);
+
+    requestAnimationFrame(gameLoop);
 }
 
 
 /* =========================================================
-   UTILIDAD PARA CREAR ELEMENTOS
+   CRECIMIENTO
    ========================================================= */
 
-function createElement(tag, className, text = "") {
+function updatePlants() {
 
-    const element = document.createElement(tag);
+    /*
+     * Aquí está la regla importante:
+     *
+     * SOLO crecen mientras watering
+     * sea true.
+     */
 
-    if (className) {
-        element.className = className;
+    if (!watering) {
+        return;
     }
 
-    if (text) {
-        element.textContent = text;
-    }
+    flowers.forEach(
+        flower => {
 
-    return element;
-}
+            flower.growth +=
+                0.0025;
 
-
-/* =========================================================
-   CREAR ACTIVIDAD
-   ========================================================= */
-
-function createActivity(index) {
-
-    switch (index) {
-
-        case 0:
-            activityOne();
-            break;
-
-        case 1:
-            activityTwo();
-            break;
-
-        case 2:
-            activityThree();
-            break;
-
-        case 3:
-            activityFour();
-            break;
-
-        case 4:
-            activityFive();
-            break;
-
-        case 5:
-            activitySix();
-            break;
-
-        case 6:
-            activitySeven();
-            break;
-
-        case 7:
-            activityEight();
-            break;
-
-        case 8:
-            activityNine();
-            break;
-
-        case 9:
-            activityTen();
-            break;
-
-        case 10:
-            activityEleven();
-            break;
-
-        case 11:
-            activityTwelve();
-            break;
-
-        case 12:
-            activityThirteen();
-            break;
-    }
-}
-
-
-/* =========================================================
-   ACTIVIDAD 1
-   BOTÓN DIRECTAMENTE DESBLOQUEADO
-   ========================================================= */
-
-function activityOne() {
-
-    const button = createElement(
-        "button",
-        "",
-        "CONTINUAR"
+            flower.growth =
+                clamp(
+                    flower.growth,
+                    0,
+                    1
+                );
+        }
     );
-
-    button.addEventListener("click", nextScreen);
-
-    content.appendChild(button);
-}
-
-
-/* =========================================================
-   ACTIVIDAD 2
-   ESTADO DE ÁNIMO
-   ========================================================= */
-
-function activityTwo() {
-
-    const instructions = createElement(
-        "div",
-        "instructions",
-        "Elige una opción. No hay respuestas correctas."
-    );
-
-    content.appendChild(instructions);
-
-    const group = createElement("div", "button-group");
-
-    const options = [
-        "Bien",
-        "Regular",
-        "Mal",
-        "???"
-    ];
-
-    options.forEach(option => {
-
-        const button = createElement("button", "", option);
-
-        button.addEventListener("click", nextScreen);
-
-        group.appendChild(button);
-    });
-
-    content.appendChild(group);
-}
-
-
-/* =========================================================
-   ACTIVIDAD 3
-   ENCONTRAR EL BOTÓN
-   ========================================================= */
-
-function activityThree() {
-
-    const instructions = createElement(
-        "div",
-        "instructions",
-        "Encuentra el único botón que realmente sirve."
-    );
-
-    content.appendChild(instructions);
-
-    const area = createElement(
-        "div",
-        "button-maze"
-    );
-
-    const fakeTexts = [
-        "No",
-        "Tampoco",
-        "Ese no",
-        "Nope",
-        "Aquí no",
-        "Prueba otro",
-        "Casi",
-        "Definitivamente no",
-        "¿Este?",
-        "NO"
-    ];
-
-    fakeTexts.forEach((text, index) => {
-
-        const button = createElement(
-            "button",
-            "fake-button",
-            text
-        );
-
-        const x = Math.random() * 80 + 5;
-        const y = Math.random() * 70 + 10;
-
-        button.style.left = `${x}%`;
-        button.style.top = `${y}%`;
-
-        button.addEventListener("click", () => {
-
-            button.textContent = "Te has equivocado.";
-
-            setTimeout(() => {
-                button.textContent = text;
-            }, 500);
-
-        });
-
-        area.appendChild(button);
-    });
 
 
     /*
-     * El botón verdadero.
+     * Actualizar barra.
      */
 
-    const correct = createElement(
-        "button",
-        "fake-button",
-        "ESTE"
-    );
+    const average =
+        flowers.reduce(
+            (total, flower) =>
+                total + flower.growth,
+            0
+        ) /
+        flowers.length;
 
-    correct.style.left = "50%";
-    correct.style.top = "45%";
-
-    correct.addEventListener("click", nextScreen);
-
-    area.appendChild(correct);
-
-    content.appendChild(area);
+    waterFill.style.width =
+        `${average * 100}%`;
 }
 
 
 /* =========================================================
-   ACTIVIDAD 4
-   MEMORIA
+   ESCENA
    ========================================================= */
 
-function activityFour() {
+function drawScene(time) {
 
-    const instructions = createElement(
-        "div",
-        "instructions",
-        "Memoriza el orden de los símbolos. Después tendrás que repetirlo."
+    /*
+     * Dibujamos TODO a 320x180.
+     */
+
+    pixelCtx.clearRect(
+        0,
+        0,
+        PIXEL_WIDTH,
+        PIXEL_HEIGHT
     );
 
-    content.appendChild(instructions);
+    drawPixelSky();
 
-    const grid = createElement(
-        "div",
-        "memory-grid"
-    );
+    drawPixelSun();
 
-    const symbols = ["◆", "●", "▲", "■"];
+    drawPixelClouds();
 
-    symbols.forEach(symbol => {
+    drawPixelMountains();
 
-        const button = createElement(
-            "button",
-            "memory-tile",
-            symbol
-        );
+    drawPixelHills();
 
-        button.dataset.symbol = symbol;
+    drawPixelGround();
 
-        grid.appendChild(button);
-    });
+    drawPixelGrass();
 
-    content.appendChild(grid);
+    drawPixelPot();
 
-    const feedback = createElement(
-        "div",
-        "feedback"
-    );
+    if (flowersPlanted) {
 
-    content.appendChild(feedback);
+        drawPixelFlowers(time);
 
+        if (watering) {
+            drawWaterDrops();
+        }
 
-    const tiles = [...grid.children];
-
-    const sequence = [];
-
-    for (let i = 0; i < 4; i++) {
-
-        sequence.push(
-            Math.floor(Math.random() * 4)
-        );
+        drawWateringCan();
     }
 
 
     /*
-     * Mostrar secuencia.
+     * Ahora escalamos el pequeño canvas
+     * hasta ocupar toda la pantalla.
      */
 
-    let position = 0;
+    ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
 
-    setTimeout(() => {
+    ctx.imageSmoothingEnabled =
+        false;
 
-        const interval = setInterval(() => {
+    ctx.drawImage(
+        pixelCanvas,
+        0,
+        0,
+        width,
+        height
+    );
+}
 
-            tiles.forEach(tile => {
-                tile.classList.remove("active");
-            });
 
-            tiles[sequence[position]].classList.add("active");
+/* =========================================================
+   CIELO PIXEL ART
+   ========================================================= */
 
-            setTimeout(() => {
-                tiles[sequence[position]].classList.remove("active");
-            }, 350);
+function drawPixelSky() {
 
-            position++;
+    pixelCtx.fillStyle =
+        "#73c9ed";
 
-            if (position >= sequence.length) {
+    pixelCtx.fillRect(
+        0,
+        0,
+        320,
+        180
+    );
 
-                clearInterval(interval);
 
-                setTimeout(() => {
+    /*
+     * Bandas de cielo.
+     */
 
-                    let playerPosition = 0;
+    pixelCtx.fillStyle =
+        "#81d0ee";
 
-                    tiles.forEach((tile, index) => {
+    pixelCtx.fillRect(
+        0,
+        35,
+        320,
+        30
+    );
 
-                        tile.addEventListener("click", () => {
+    pixelCtx.fillStyle =
+        "#91d7ef";
 
-                            if (
-                                index === sequence[playerPosition]
-                            ) {
+    pixelCtx.fillRect(
+        0,
+        65,
+        320,
+        30
+    );
+}
 
-                                playerPosition++;
 
-                                tile.classList.add("active");
+/* =========================================================
+   SOL
+   ========================================================= */
 
-                                setTimeout(() => {
-                                    tile.classList.remove("active");
-                                }, 150);
+function drawPixelSun() {
 
-                                if (
-                                    playerPosition === sequence.length
-                                ) {
-                                    nextScreen();
-                                }
+    pixelCtx.fillStyle =
+        "#ffe68a";
 
-                            } else {
+    pixelCtx.fillRect(
+        255,
+        22,
+        22,
+        22
+    );
 
-                                playerPosition = 0;
+    pixelCtx.fillRect(
+        251,
+        27,
+        30,
+        12
+    );
+}
 
-                                feedback.textContent =
-                                    "No era ese orden. Prueba otra vez.";
-                            }
 
-                        });
+/* =========================================================
+   NUBES
+   ========================================================= */
 
-                    });
+function drawPixelClouds() {
 
-                }, 500);
+    drawCloud(
+        45,
+        27,
+        1
+    );
 
+    drawCloud(
+        185,
+        43,
+        0.75
+    );
+}
+
+
+function drawCloud(
+    x,
+    y,
+    size
+) {
+
+    const s =
+        Math.round(8 * size);
+
+    pixelCtx.fillStyle =
+        "#ffffff";
+
+    pixelCtx.fillRect(
+        x,
+        y,
+        s * 6,
+        s * 2
+    );
+
+    pixelCtx.fillRect(
+        x + s,
+        y - s,
+        s * 3,
+        s
+    );
+
+    pixelCtx.fillRect(
+        x + s * 2,
+        y - s * 2,
+        s * 2,
+        s
+    );
+}
+
+
+/* =========================================================
+   MONTAÑAS
+   ========================================================= */
+
+function drawPixelMountains() {
+
+    /*
+     * Montañas lejanas.
+     */
+
+    pixelCtx.fillStyle =
+        "#8dbb62";
+
+    pixelCtx.beginPath();
+
+    pixelCtx.moveTo(0, 100);
+
+    pixelCtx.lineTo(35, 62);
+    pixelCtx.lineTo(62, 90);
+
+    pixelCtx.lineTo(100, 53);
+    pixelCtx.lineTo(140, 94);
+
+    pixelCtx.lineTo(180, 58);
+    pixelCtx.lineTo(220, 95);
+
+    pixelCtx.lineTo(260, 60);
+    pixelCtx.lineTo(320, 98);
+
+    pixelCtx.lineTo(320, 180);
+    pixelCtx.lineTo(0, 180);
+
+    pixelCtx.closePath();
+
+    pixelCtx.fill();
+
+
+    /*
+     * Montañas cercanas.
+     */
+
+    pixelCtx.fillStyle =
+        "#589447";
+
+    pixelCtx.beginPath();
+
+    pixelCtx.moveTo(0, 112);
+
+    pixelCtx.lineTo(55, 75);
+    pixelCtx.lineTo(95, 105);
+
+    pixelCtx.lineTo(135, 72);
+    pixelCtx.lineTo(175, 111);
+
+    pixelCtx.lineTo(225, 76);
+    pixelCtx.lineTo(275, 112);
+
+    pixelCtx.lineTo(320, 83);
+
+    pixelCtx.lineTo(320, 180);
+    pixelCtx.lineTo(0, 180);
+
+    pixelCtx.closePath();
+
+    pixelCtx.fill();
+
+
+    /*
+     * Zonas de sombra.
+     */
+
+    pixelCtx.fillStyle =
+        "#477d3e";
+
+    pixelCtx.fillRect(
+        48,
+        91,
+        12,
+        20
+    );
+
+    pixelCtx.fillRect(
+        80,
+        100,
+        18,
+        12
+    );
+
+    pixelCtx.fillRect(
+        163,
+        101,
+        15,
+        14
+    );
+
+    pixelCtx.fillRect(
+        255,
+        99,
+        20,
+        13
+    );
+}
+
+
+/* =========================================================
+   COLINAS
+   ========================================================= */
+
+function drawPixelHills() {
+
+    pixelCtx.fillStyle =
+        "#65a849";
+
+    pixelCtx.beginPath();
+
+    pixelCtx.moveTo(
+        0,
+        115
+    );
+
+    pixelCtx.quadraticCurveTo(
+        50,
+        91,
+        105,
+        119
+    );
+
+    pixelCtx.quadraticCurveTo(
+        165,
+        91,
+        220,
+        120
+    );
+
+    pixelCtx.quadraticCurveTo(
+        270,
+        94,
+        320,
+        119
+    );
+
+    pixelCtx.lineTo(
+        320,
+        180
+    );
+
+    pixelCtx.lineTo(
+        0,
+        180
+    );
+
+    pixelCtx.closePath();
+
+    pixelCtx.fill();
+}
+
+
+/* =========================================================
+   SUELO
+   ========================================================= */
+
+function drawPixelGround() {
+
+    pixelCtx.fillStyle =
+        "#69a94a";
+
+    pixelCtx.fillRect(
+        0,
+        120,
+        320,
+        60
+    );
+
+
+    /*
+     * Franja de tierra.
+     */
+
+    pixelCtx.fillStyle =
+        "#5c913e";
+
+    pixelCtx.fillRect(
+        0,
+        120,
+        320,
+        5
+    );
+}
+
+
+/* =========================================================
+   HIERBA
+   ========================================================= */
+
+function drawPixelGrass() {
+
+    /*
+     * SIN RUIDO ALEATORIO.
+     *
+     * Los detalles están colocados
+     * manualmente para mantener
+     * el aspecto limpio.
+     */
+
+    pixelCtx.fillStyle =
+        "#4e8d3b";
+
+    const grass = [
+        [12,130],
+        [27,143],
+        [43,127],
+        [62,151],
+        [79,136],
+        [97,157],
+        [117,131],
+        [140,145],
+        [160,128],
+        [179,153],
+        [198,137],
+        [218,158],
+        [239,130],
+        [260,148],
+        [280,133],
+        [300,151]
+    ];
+
+    grass.forEach(
+        ([x, y]) => {
+
+            pixelCtx.fillRect(
+                x,
+                y,
+                2,
+                7
+            );
+
+            pixelCtx.fillRect(
+                x + 3,
+                y + 3,
+                2,
+                4
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   MACETA
+   ========================================================= */
+
+function getPot() {
+
+    return {
+
+        x: 112,
+
+        y: 122,
+
+        width: 96,
+
+        height: 46
+    };
+}
+
+
+function drawPixelPot() {
+
+    const pot =
+        getPot();
+
+    /*
+     * Sombra.
+     */
+
+    pixelCtx.fillStyle =
+        "#477735";
+
+    pixelCtx.fillRect(
+        pot.x + 10,
+        pot.y + pot.height,
+        pot.width - 20,
+        5
+    );
+
+
+    /*
+     * Cuerpo.
+     */
+
+    pixelCtx.fillStyle =
+        "#bd5932";
+
+    pixelCtx.fillRect(
+        pot.x + 8,
+        pot.y + 10,
+        pot.width - 16,
+        35
+    );
+
+
+    /*
+     * Parte iluminada.
+     */
+
+    pixelCtx.fillStyle =
+        "#d87342";
+
+    pixelCtx.fillRect(
+        pot.x + 15,
+        pot.y + 13,
+        10,
+        28
+    );
+
+
+    /*
+     * Borde.
+     */
+
+    pixelCtx.fillStyle =
+        "#9f4529";
+
+    pixelCtx.fillRect(
+        pot.x,
+        pot.y,
+        pot.width,
+        14
+    );
+
+
+    /*
+     * Tierra.
+     */
+
+    pixelCtx.fillStyle =
+        "#54331f";
+
+    pixelCtx.fillRect(
+        pot.x + 5,
+        pot.y + 4,
+        pot.width - 10,
+        10
+    );
+
+
+    /*
+     * Detalles de tierra limpios.
+     */
+
+    pixelCtx.fillStyle =
+        "#75462b";
+
+    pixelCtx.fillRect(
+        pot.x + 15,
+        pot.y + 6,
+        8,
+        3
+    );
+
+    pixelCtx.fillRect(
+        pot.x + 42,
+        pot.y + 8,
+        7,
+        2
+    );
+
+    pixelCtx.fillRect(
+        pot.x + 67,
+        pot.y + 5,
+        10,
+        3
+    );
+}
+
+
+/* =========================================================
+   FLORES
+   ========================================================= */
+
+function drawPixelFlowers(time) {
+
+    const pot =
+        getPot();
+
+    flowers.forEach(
+        flower => {
+
+            /*
+             * Posición X.
+             */
+
+            const x =
+                pot.x +
+                pot.width *
+                flower.x;
+
+
+            /*
+             * Altura.
+             */
+
+            const maxHeight =
+                55 *
+                flower.maxHeight;
+
+            const stemHeight =
+                maxHeight *
+                flower.growth;
+
+
+            /*
+             * Viento.
+             */
+
+            const wind =
+                Math.sin(
+                    time *
+                    0.002 *
+                    flower.windSpeed +
+                    flower.windOffset
+                ) *
+                (1 +
+                stemHeight * 0.045);
+
+
+            /*
+             * Pequeña inclinación
+             * individual.
+             */
+
+            const lean =
+                flower.lean *
+                stemHeight;
+
+
+            const topX =
+                x +
+                wind +
+                lean;
+
+            const topY =
+                pot.y -
+                stemHeight;
+
+
+            /*
+             * TALLO
+             */
+
+            pixelCtx.strokeStyle =
+                "#34783c";
+
+            pixelCtx.lineWidth =
+                2;
+
+            pixelCtx.beginPath();
+
+            pixelCtx.moveTo(
+                x,
+                pot.y + 5
+            );
+
+            pixelCtx.lineTo(
+                topX,
+                topY
+            );
+
+            pixelCtx.stroke();
+
+
+            /*
+             * HOJAS.
+             */
+
+            if (
+                flower.growth >
+                0.25
+            ) {
+
+                drawPixelLeaf(
+                    x +
+                    (topX - x) * 0.45,
+
+                    pot.y -
+                    stemHeight * 0.45,
+
+                    -1
+                );
             }
 
-        }, 650);
+            if (
+                flower.growth >
+                0.4
+            ) {
 
-    }, 800);
+                drawPixelLeaf(
+                    x +
+                    (topX - x) * 0.65,
+
+                    pot.y -
+                    stemHeight * 0.65,
+
+                    1
+                );
+            }
+
+
+            /*
+             * FLOR.
+             */
+
+            if (
+                flower.growth >
+                0.65
+            ) {
+
+                const size =
+                    3.5 *
+                    flower.size;
+
+                drawPixelFlower(
+                    topX,
+                    topY,
+                    size,
+                    flower.color
+                );
+            }
+        }
+    );
 }
 
 
 /* =========================================================
-   ACTIVIDAD 5
-   BOTÓN QUE SE MUEVE
+   HOJA
    ========================================================= */
 
-function activityFive() {
+function drawPixelLeaf(
+    x,
+    y,
+    direction
+) {
 
-    const instructions = createElement(
-        "div",
-        "instructions",
-        "Pulsa el botón que dice <strong>ESTE</strong>. No será tan fácil."
+    pixelCtx.fillStyle =
+        "#3d8243";
+
+    pixelCtx.fillRect(
+        x,
+        y,
+        7 * direction,
+        3
     );
 
-    content.appendChild(instructions);
+    pixelCtx.fillRect(
+        x +
+        5 * direction,
+        y - 2,
+        5 * direction,
+        3
+    );
+}
 
-    const button = createElement(
-        "button",
-        "",
-        "ESTE"
+
+/* =========================================================
+   FLOR PIXEL ART
+   ========================================================= */
+
+function drawPixelFlower(
+    x,
+    y,
+    size,
+    color
+) {
+
+    /*
+     * Pétalos cuadrados,
+     * pero con una silueta irregular
+     * para que parezca pixel art.
+     */
+
+    pixelCtx.fillStyle =
+        color;
+
+    /*
+     * Pétalo superior.
+     */
+
+    pixelCtx.fillRect(
+        x - size,
+        y - size * 2,
+        size * 2,
+        size
     );
 
-    content.appendChild(button);
+    /*
+     * Pétalo izquierdo.
+     */
 
-    let moving = true;
+    pixelCtx.fillRect(
+        x - size * 2,
+        y - size,
+        size,
+        size * 2
+    );
 
-    function moveButton() {
+    /*
+     * Pétalo derecho.
+     */
 
-        if (!moving) {
+    pixelCtx.fillRect(
+        x + size,
+        y - size,
+        size,
+        size * 2
+    );
+
+    /*
+     * Pétalo inferior.
+     */
+
+    pixelCtx.fillRect(
+        x - size,
+        y + size,
+        size * 2,
+        size
+    );
+
+
+    /*
+     * Píxeles adicionales.
+     */
+
+    pixelCtx.fillRect(
+        x - size * 2,
+        y - size * 0.5,
+        size,
+        size
+    );
+
+    pixelCtx.fillRect(
+        x + size,
+        y - size * 0.5,
+        size,
+        size
+    );
+
+
+    /*
+     * Centro amarillo.
+     */
+
+    pixelCtx.fillStyle =
+        "#e5b83b";
+
+    pixelCtx.fillRect(
+        x - size * 0.6,
+        y - size * 0.6,
+        size * 1.2,
+        size * 1.2
+    );
+}
+
+
+/* =========================================================
+   REGADERA
+   ========================================================= */
+
+function drawWateringCan() {
+
+    let x =
+        pointerX / width *
+        PIXEL_WIDTH;
+
+    let y =
+        pointerY / height *
+        PIXEL_HEIGHT;
+
+
+    /*
+     * Si el cursor está fuera,
+     * colocarla abajo a la derecha.
+     */
+
+    if (
+        pointerX === 0 &&
+        pointerY === 0
+    ) {
+
+        x = 275;
+        y = 145;
+    }
+
+
+    /*
+     * La regadera se mantiene
+     * cerca del dedo/cursor.
+     */
+
+    pixelCtx.fillStyle =
+        "#0b6f73";
+
+    /*
+     * Asa.
+     */
+
+    pixelCtx.strokeStyle =
+        "#07575b";
+
+    pixelCtx.lineWidth =
+        3;
+
+    pixelCtx.beginPath();
+
+    pixelCtx.arc(
+        x - 3,
+        y - 3,
+        9,
+        Math.PI,
+        Math.PI * 1.8
+    );
+
+    pixelCtx.stroke();
+
+
+    /*
+     * Cuerpo.
+     */
+
+    pixelCtx.fillStyle =
+        "#16848a";
+
+    pixelCtx.fillRect(
+        x - 10,
+        y,
+        18,
+        12
+    );
+
+
+    /*
+     * Pico.
+     */
+
+    pixelCtx.fillStyle =
+        "#07575b";
+
+    pixelCtx.fillRect(
+        x + 7,
+        y + 2,
+        15,
+        3
+    );
+
+    pixelCtx.fillRect(
+        x + 18,
+        y,
+        5,
+        5
+    );
+
+
+    /*
+     * Agua cayendo.
+     */
+
+    if (watering) {
+
+        pixelCtx.fillStyle =
+            "#66d7eb";
+
+        pixelCtx.fillRect(
+            x + 19,
+            y + 6,
+            2,
+            8
+        );
+
+        pixelCtx.fillRect(
+            x + 22,
+            y + 8,
+            2,
+            8
+        );
+    }
+}
+
+
+/* =========================================================
+   GOTAS DE AGUA
+   ========================================================= */
+
+function drawWaterDrops() {
+
+    /*
+     * Varias gotas cayendo sobre
+     * diferentes zonas de la maceta.
+     */
+
+    pixelCtx.fillStyle =
+        "#63d8ec";
+
+    const pot =
+        getPot();
+
+    const drops = [
+        [pot.x + 22, pot.y - 8],
+        [pot.x + 39, pot.y - 14],
+        [pot.x + 57, pot.y - 7],
+        [pot.x + 75, pot.y - 12]
+    ];
+
+    drops.forEach(
+        ([x, y]) => {
+
+            pixelCtx.fillRect(
+                x,
+                y,
+                2,
+                6
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   PLANTAR AL TOCAR LA MACETA
+   ========================================================= */
+
+function tryPlant(
+    x,
+    y
+) {
+
+    if (flowersPlanted) {
+        return;
+    }
+
+    const pot =
+        getPot();
+
+    /*
+     * Área algo mayor que la maceta
+     * para que sea fácil tocarla en móvil.
+     */
+
+    const inside =
+        x >= pot.x - 12 &&
+        x <= pot.x + pot.width + 12 &&
+        y >= pot.y - 15 &&
+        y <= pot.y + pot.height + 15;
+
+    if (!inside) {
+        return;
+    }
+
+    plantFlowers();
+}
+
+
+/* =========================================================
+   ¿ESTÁ SOBRE LA TIERRA?
+   ========================================================= */
+
+function isOverSoil(
+    x,
+    y
+) {
+
+    const pot =
+        getPot();
+
+    return (
+        x >= pot.x &&
+        x <= pot.x + pot.width &&
+        y >= pot.y &&
+        y <= pot.y + 20
+    );
+}
+
+
+/* =========================================================
+   CONVERTIR COORDENADAS
+   ========================================================= */
+
+function getPointerPosition(
+    clientX,
+    clientY
+) {
+
+    const rect =
+        canvas.getBoundingClientRect();
+
+    pointerX =
+        clientX -
+        rect.left;
+
+    pointerY =
+        clientY -
+        rect.top;
+
+    return {
+
+        x:
+            pointerX /
+            width *
+            PIXEL_WIDTH,
+
+        y:
+            pointerY /
+            height *
+            PIXEL_HEIGHT
+    };
+}
+
+
+/* =========================================================
+   RATÓN
+   ========================================================= */
+
+canvas.addEventListener(
+    "mousedown",
+    event => {
+
+        const position =
+            getPointerPosition(
+                event.clientX,
+                event.clientY
+            );
+
+
+        /*
+         * Primero plantar.
+         */
+
+        if (!flowersPlanted) {
+
+            tryPlant(
+                position.x,
+                position.y
+            );
+
             return;
         }
 
-        const x = Math.random() * 70 - 35;
-        const y = Math.random() * 60 - 30;
 
-        button.style.transform =
-            `translate(${x}px, ${y}px)`;
-    }
+        /*
+         * Después regar.
+         */
 
-    const interval = setInterval(moveButton, 600);
+        if (
+            isOverSoil(
+                position.x,
+                position.y
+            )
+        ) {
 
-    button.addEventListener("click", () => {
-
-        moving = false;
-
-        clearInterval(interval);
-
-        nextScreen();
-    });
-}
-
-
-/* =========================================================
-   ACTIVIDAD 6
-   REACCIÓN
-   ========================================================= */
-
-function activitySix() {
-
-    const instructions = createElement(
-        "div",
-        "instructions",
-        "Cuando empiece la cuenta atrás, espera. Cuando aparezca el círculo, púlsalo lo más rápido posible."
-    );
-
-    content.appendChild(instructions);
-
-    const countdown = createElement(
-        "div",
-        "countdown",
-        "3"
-    );
-
-    content.appendChild(countdown);
-
-    const area = createElement(
-        "div",
-        "reaction-area"
-    );
-
-    const target = createElement(
-        "button",
-        "reaction-target",
-        ""
-    );
-
-    area.appendChild(target);
-
-    content.appendChild(area);
-
-
-    let count = 3;
-
-    const timer = setInterval(() => {
-
-        count--;
-
-        if (count > 0) {
-
-            countdown.textContent = count;
-
-        } else {
-
-            clearInterval(timer);
-
-            countdown.classList.add("hidden");
-
-            target.style.left =
-                `${Math.random() * 80 + 10}%`;
-
-            target.style.top =
-                `${Math.random() * 70 + 15}%`;
-
-            target.style.display = "block";
-
-            target.addEventListener(
-                "click",
-                nextScreen,
-                { once: true }
-            );
+            watering = true;
         }
-
-    }, 1000);
-}
-
-
-/* =========================================================
-   ACTIVIDAD 7
-   CÓDIGO NUMÉRICO
-   ========================================================= */
-
-function activitySeven() {
-
-    const instructions = createElement(
-        "div",
-        "instructions",
-        "Pulsa los números en este orden: <strong>3 → 1 → 4</strong>"
-    );
-
-    content.appendChild(instructions);
-
-    const display = createElement(
-        "div",
-        "number-display",
-        ""
-    );
-
-    content.appendChild(display);
-
-    const pad = createElement(
-        "div",
-        "number-pad"
-    );
-
-    const code = ["3", "1", "4"];
-
-    let position = 0;
-
-    for (let i = 1; i <= 9; i++) {
-
-        const button = createElement(
-            "button",
-            "",
-            String(i)
-        );
-
-        button.addEventListener("click", () => {
-
-            if (String(i) === code[position]) {
-
-                display.textContent += i;
-
-                position++;
-
-                if (position === code.length) {
-
-                    setTimeout(nextScreen, 400);
-                }
-
-            } else {
-
-                position = 0;
-                display.textContent = "";
-
-            }
-
-        });
-
-        pad.appendChild(button);
     }
-
-    content.appendChild(pad);
-}
+);
 
 
-/* =========================================================
-   ACTIVIDAD 8
-   HOSPITAL DE ANOMALÍAS
-   ========================================================= */
+canvas.addEventListener(
+    "mousemove",
+    event => {
 
-function activityEight() {
-
-    const instructions = createElement(
-        "div",
-        "instructions",
-        "Algo no encaja. Encuentra la anomalía."
-    );
-
-    content.appendChild(instructions);
-
-    const grid = createElement(
-        "div",
-        "anomaly-grid"
-    );
-
-    const anomalyPosition =
-        Math.floor(Math.random() * 16);
-
-    for (let i = 0; i < 16; i++) {
-
-        const button = createElement(
-            "button",
-            "anomaly-item",
-            "◆"
-        );
-
-        if (i === anomalyPosition) {
-
-            button.textContent = "◇";
-
-            button.addEventListener(
-                "click",
-                nextScreen
+        const position =
+            getPointerPosition(
+                event.clientX,
+                event.clientY
             );
 
-        } else {
+        if (
+            flowersPlanted &&
+            event.buttons > 0
+        ) {
 
-            button.addEventListener("click", () => {
-
-                button.textContent = "✕";
-
-                setTimeout(() => {
-                    button.textContent = "◆";
-                }, 300);
-
-            });
-
+            watering =
+                isOverSoil(
+                    position.x,
+                    position.y
+                );
         }
-
-        grid.appendChild(button);
     }
+);
 
-    content.appendChild(grid);
-}
+
+canvas.addEventListener(
+    "mouseup",
+    () => {
+
+        watering = false;
+
+    }
+);
+
+
+canvas.addEventListener(
+    "mouseleave",
+    () => {
+
+        watering = false;
+
+    }
+);
 
 
 /* =========================================================
-   ACTIVIDAD 9
-   CONSTRUIR UNA CASA
+   MÓVIL
    ========================================================= */
 
-function activityNine() {
+canvas.addEventListener(
+    "touchstart",
+    event => {
 
-    const instructions = createElement(
-        "div",
-        "instructions",
-        "Construye una casa colocando <strong>8 bloques</strong> en la cuadrícula."
-    );
+        event.preventDefault();
 
-    content.appendChild(instructions);
+        const touch =
+            event.touches[0];
 
-    const grid = createElement(
-        "div",
-        "house-grid"
-    );
-
-    let blocks = 0;
-
-    for (let i = 0; i < 35; i++) {
-
-        const cell = createElement(
-            "button",
-            "house-cell"
-        );
-
-        cell.addEventListener("click", () => {
-
-            if (cell.classList.contains("built")) {
-                return;
-            }
-
-            cell.classList.add("built");
-
-            blocks++;
-
-            if (blocks >= 8) {
-
-                setTimeout(nextScreen, 500);
-            }
-
-        });
-
-        grid.appendChild(cell);
-    }
-
-    content.appendChild(grid);
-}
-
-
-/* =========================================================
-   ACTIVIDAD 10
-   RECUERDO
-   ========================================================= */
-
-function activityTen() {
-
-    const instructions = createElement(
-        "div",
-        "instructions",
-        "Memoriza la palabra que aparece. Después tendrás que encontrarla."
-    );
-
-    content.appendChild(instructions);
-
-    const word = createElement(
-        "div",
-        "remember-word",
-        "NARANJA"
-    );
-
-    content.appendChild(word);
-
-    const words = [
-        "NARANJA",
-        "HOSPITAL",
-        "SERVER",
-        "CASA"
-    ];
-
-    setTimeout(() => {
-
-        word.textContent =
-            "¿Cuál era?";
-
-        const group = createElement(
-            "div",
-            "button-group"
-        );
-
-        words.forEach(option => {
-
-            const button = createElement(
-                "button",
-                "",
-                option
+        const position =
+            getPointerPosition(
+                touch.clientX,
+                touch.clientY
             );
 
-            button.addEventListener("click", () => {
 
-                if (option === "NARANJA") {
-                    nextScreen();
-                } else {
-                    button.textContent = "No era esa.";
-                }
+        /*
+         * Plantar.
+         */
 
-            });
+        if (!flowersPlanted) {
 
-            group.appendChild(button);
-        });
-
-        content.appendChild(group);
-
-    }, 1800);
-}
-
-
-/* =========================================================
-   ACTIVIDAD 11
-   SÍ / NO
-   ========================================================= */
-
-function activityEleven() {
-
-    const instructions = createElement(
-        "div",
-        "instructions",
-        "Después de todo esto... ¿te he hecho recordar esas cosas?"
-    );
-
-    content.appendChild(instructions);
-
-    const group = createElement(
-        "div",
-        "button-group"
-    );
-
-    const yes = createElement(
-        "button",
-        "",
-        "Sí"
-    );
-
-    const no = createElement(
-        "button",
-        "",
-        "No"
-    );
-
-    yes.addEventListener("click", () => {
-
-        instructions.textContent =
-            "Me alegro.";
-
-        setTimeout(nextScreen, 700);
-
-    });
-
-    no.addEventListener("click", () => {
-
-        instructions.textContent =
-            "Bueno... lo he intentado.";
-
-        setTimeout(nextScreen, 700);
-
-    });
-
-    group.appendChild(yes);
-    group.appendChild(no);
-
-    content.appendChild(group);
-}
-
-
-/* =========================================================
-   ACTIVIDAD 12
-   EL BUG
-   ========================================================= */
-
-function activityTwelve() {
-
-    const instructions = createElement(
-        "div",
-        "instructions",
-        "Algo ha salido mal. Encuentra la forma de continuar."
-    );
-
-    content.appendChild(instructions);
-
-    const button = createElement(
-        "button",
-        "",
-        "CONTINUAR"
-    );
-
-    content.appendChild(button);
-
-
-    let clicks = 0;
-
-    button.addEventListener("click", () => {
-
-        clicks++;
-
-        if (clicks === 1) {
-
-            button.textContent =
-                "ERROR";
-
-            button.classList.add("glitch");
-
-        } else if (clicks === 2) {
-
-            button.textContent =
-                "404";
-
-        } else if (clicks === 3) {
-
-            button.textContent =
-                "¿CONTINUAR?";
-
-        } else if (clicks === 4) {
-
-            button.classList.remove("glitch");
-
-            nextScreen();
-        }
-
-    });
-}
-
-
-/* =========================================================
-   ACTIVIDAD 13
-   PRUEBA FINAL DE REACCIÓN
-   ========================================================= */
-
-function activityThirteen() {
-
-    const instructions = createElement(
-        "div",
-        "instructions",
-        "Última prueba. Espera a que llegue a <strong>0</strong> y pulsa el botón exactamente entonces."
-    );
-
-    content.appendChild(instructions);
-
-    const number = createElement(
-        "div",
-        "precision-number",
-        "3"
-    );
-
-    content.appendChild(number);
-
-    const button = createElement(
-        "button",
-        "",
-        "ESPERAR..."
-    );
-
-    button.disabled = true;
-
-    content.appendChild(button);
-
-    let value = 3;
-
-    const timer = setInterval(() => {
-
-        value--;
-
-        number.textContent = value;
-
-        if (value === 0) {
-
-            clearInterval(timer);
-
-            button.disabled = false;
-
-            button.textContent =
-                "¡AHORA!";
-
-            button.addEventListener(
-                "click",
-                nextScreen,
-                { once: true }
+            tryPlant(
+                position.x,
+                position.y
             );
 
+            return;
         }
 
-    }, 1000);
-}
+
+        /*
+         * Regar.
+         */
+
+        if (
+            isOverSoil(
+                position.x,
+                position.y
+            )
+        ) {
+
+            watering = true;
+        }
+
+    },
+    {
+        passive: false
+    }
+);
+
+
+canvas.addEventListener(
+    "touchmove",
+    event => {
+
+        event.preventDefault();
+
+        const touch =
+            event.touches[0];
+
+        const position =
+            getPointerPosition(
+                touch.clientX,
+                touch.clientY
+            );
+
+
+        if (flowersPlanted) {
+
+            watering =
+                isOverSoil(
+                    position.x,
+                    position.y
+                );
+        }
+
+    },
+    {
+        passive: false
+    }
+);
+
+
+canvas.addEventListener(
+    "touchend",
+    event => {
+
+        event.preventDefault();
+
+        watering = false;
+
+    },
+    {
+        passive: false
+    }
+);
 
 
 /* =========================================================
-   INICIAR
+   INICIAR CANVAS
    ========================================================= */
 
-renderScreen();
+resizeCanvas();

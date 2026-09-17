@@ -1,34 +1,74 @@
-﻿<!DOCTYPE html>
+﻿
+<!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Experimento</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <title>Flores</title>
 
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <main id="app">
+    <!-- INTRODUCCIÓN -->
 
-        <!--
-            Las pantallas se generan desde JavaScript.
-            Aquí solamente dejamos el contenedor.
-        -->
+    <div id="introScreen" class="screen">
 
-        <section id="screen" class="screen">
+        <div class="introBox">
 
-            <div id="content" class="content">
-                <!-- Contenido generado por JavaScript -->
+            <p>
+                ¿Flores querías? Pues flores tendrás, en este juego web
+                te regalo unas florecitas. Pero se me ha olvidado
+                plantarlas :P Hazlo tu andaaaaa
+            </p>
+
+            <button id="continueButton">
+                CONTINUAR
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- JUEGO -->
+
+    <div id="gameScreen" class="gameScreen hidden">
+
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="gameUI">
+
+            <div id="message">
+                Toca la maceta para plantar las flores.
             </div>
 
-        </section>
+            <div id="waterMeterContainer">
 
-    </main>
+                <div id="waterMeter">
+                    <div id="waterFill"></div>
+                </div>
+
+                <span id="waterText">
+                    Crecimiento
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
 
     <script src="script.js"></script>
 
 </body>
+
 </html>
