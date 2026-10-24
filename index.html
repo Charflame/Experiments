@@ -1,74 +1,764 @@
-﻿
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Fechas Históricas de España</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    >
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
 
-    <title>Flores</title>
+    <!-- Estilos CSS Incorporados -->
+    <style>
+        /* Base Styling */
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
 
-    <link rel="stylesheet" href="style.css">
+        /* Glassmorphism custom components */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.8);
+        }
+
+        /* Keyboard Buttons Interactive styling */
+        .key-btn {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .key-btn:active {
+            transform: scale(0.92);
+            background-color: rgba(99, 102, 241, 0.4);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.35s ease-out forwards;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+            50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.6); }
+        }
+        .glow-effect {
+            animation: pulseGlow 3s infinite;
+        }
+    </style>
 </head>
+<body class="flex flex-col min-h-screen text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
 
-<body>
-
-    <!-- INTRODUCCIÓN -->
-
-    <div id="introScreen" class="screen">
-
-        <div class="introBox">
-
-            <p>
-                ¿Flores querías? Pues flores tendrás, en este juego web
-                te regalo unas florecitas. Pero se me ha olvidado
-                plantarlas :P Hazlo tu andaaaaa
-            </p>
-
-            <button id="continueButton">
-                CONTINUAR
-            </button>
-
+    <!-- Header / Barra Superior -->
+    <header class="w-full glass-panel sticky top-0 z-50 px-4 py-3 border-b border-slate-700/50">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-landmark text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-indigo-200">
+                        Cronos Hispania
+                    </h1>
+                    <p class="text-xs text-indigo-300 font-medium">Fechas Históricas de España</p>
+                </div>
+            </div>
+            
+            <div id="game-status-pill" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full glass-card text-xs font-semibold text-indigo-300 border border-indigo-500/20">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span id="header-progress-text">Modo Evaluación</span>
+            </div>
         </div>
+    </header>
 
-    </div>
+    <!-- Contenido Principal -->
+    <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
 
-
-    <!-- JUEGO -->
-
-    <div id="gameScreen" class="gameScreen hidden">
-
-        <canvas id="gameCanvas"></canvas>
-
-        <div id="gameUI">
-
-            <div id="message">
-                Toca la maceta para plantar las flores.
+        <!-- ================= 1. PANTALLA INICIAL (ESTUDIO Y SELECCIÓN) ================= -->
+        <section id="screen-study" class="w-full animate-fade-in flex flex-col gap-5">
+            <div class="text-center space-y-2 my-2">
+                <span class="px-3 py-1 text-xs font-bold tracking-widest text-indigo-400 bg-indigo-950/80 rounded-full border border-indigo-800/50 uppercase">
+                    Fase de Estudio
+                </span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Cronología Completa de Eventos</h2>
+                <p class="text-slate-400 text-sm max-w-lg mx-auto">
+                    Repasa los acontecimientos históricos antes de comenzar el desafío de memorización.
+                </p>
             </div>
 
-            <div id="waterMeterContainer">
+            <!-- Selector de Cantidad de Preguntas -->
+            <div class="glass-panel p-4 rounded-2xl border border-indigo-500/20 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <div class="p-3 bg-indigo-600/20 text-indigo-400 rounded-xl">
+                        <i class="fa-solid fa-sliders text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-white">Número de Preguntas</h3>
+                        <p class="text-xs text-slate-400">Selecciona el tamaño de la partida</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto justify-stretch">
+                    <button onclick="setQuizLength(10)" id="btn-mode-10" class="flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-700 hover:border-indigo-500 bg-slate-800 text-slate-300">
+                        10 Eventos
+                    </button>
+                    <button onclick="setQuizLength(20)" id="btn-mode-20" class="flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-700 hover:border-indigo-500 bg-slate-800 text-slate-300">
+                        20 Eventos
+                    </button>
+                    <button onclick="setQuizLength('all')" id="btn-mode-all" class="flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold transition border border-indigo-500/50 bg-indigo-600 text-white shadow-lg shadow-indigo-600/30">
+                        Todas (<span id="total-events-count">0</span>)
+                    </button>
+                </div>
+            </div>
 
-                <div id="waterMeter">
-                    <div id="waterFill"></div>
+            <!-- Lista con scroll de acontecimientos -->
+            <div class="glass-panel rounded-2xl p-4 sm:p-6 shadow-2xl relative">
+                <div class="flex items-center justify-between mb-4 border-b border-slate-700/60 pb-3">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-list-ol text-indigo-400"></i> Formato: acontecimiento (fecha)
+                    </span>
+                    <span class="text-xs font-medium bg-slate-800 text-indigo-300 px-2.5 py-1 rounded-full border border-slate-700">
+                        Orden Cronológico
+                    </span>
                 </div>
 
-                <span id="waterText">
-                    Crecimiento
-                </span>
-
+                <div id="study-list" class="space-y-2.5 max-h-[360px] sm:max-h-[400px] overflow-y-auto pr-2">
+                    <!-- Eventos cargados dinámicamente -->
+                </div>
             </div>
 
-        </div>
+            <!-- Botón Comenzar -->
+            <div class="pt-2 flex justify-center">
+                <button onclick="startGame()" class="glow-effect w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-base rounded-2xl shadow-xl flex items-center justify-center gap-3 transition transform active:scale-95">
+                    <i class="fa-solid fa-play text-lg"></i>
+                    <span>Comenzar Juego</span>
+                </button>
+            </div>
+        </section>
 
-    </div>
+        <!-- ================= 2. PANTALLA DE JUEGO ================= -->
+        <section id="screen-game" class="hidden w-full max-w-2xl mx-auto animate-fade-in flex-col gap-5">
+            
+            <!-- Barra de Progreso y Marcador -->
+            <div class="glass-panel p-4 rounded-2xl flex flex-col gap-3">
+                <div class="flex justify-between items-center text-sm font-bold">
+                    <span class="text-indigo-300 flex items-center gap-2">
+                        <i class="fa-solid fa-flag-checkered"></i>
+                        <span>Pregunta <span id="game-current-step">1</span> de <span id="game-total-steps">0</span></span>
+                    </span>
+                    <span id="game-score-badge" class="text-xs bg-indigo-950 text-indigo-300 border border-indigo-700/50 px-3 py-1 rounded-full font-semibold">
+                        Aciertos: <span id="game-live-score">0</span>
+                    </span>
+                </div>
+                <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                    <div id="game-progress-bar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-300 w-0"></div>
+                </div>
+            </div>
 
+            <!-- Tarjeta de Pregunta -->
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl text-center flex flex-col items-center gap-6 shadow-2xl relative border-indigo-500/30">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xl mb-1">
+                    <i class="fa-solid fa-calendar-day"></i>
+                </div>
+                
+                <h2 id="question-event-name" class="text-xl sm:text-2xl font-bold text-white tracking-wide leading-relaxed min-h-[3.5rem] flex items-center justify-center">
+                    Cargando acontecimiento...
+                </h2>
 
-    <script src="script.js"></script>
+                <!-- Campo de Entrada (Máximo 4 dígitos) -->
+                <div class="w-full max-w-xs flex flex-col items-center gap-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Fecha (Máximo 4 números)</label>
+                    <div class="relative w-full">
+                        <input type="text" 
+                               id="numeric-input" 
+                               inputmode="numeric" 
+                               pattern="[0-9]*" 
+                               maxlength="4" 
+                               readonly
+                               placeholder="----" 
+                               class="w-full text-center text-3xl font-extrabold tracking-widest bg-slate-900/90 text-amber-400 border-2 border-indigo-500/50 rounded-2xl py-3 px-4 focus:outline-none focus:border-indigo-400 shadow-inner">
+                        <button onclick="clearInput()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-400 p-2 text-sm transition">
+                            <i class="fa-solid fa-delete-left"></i>
+                        </button>
+                    </div>
+                    <span id="helper-note" class="text-[11px] text-slate-400 italic">Escribe el año o siglo numérico</span>
+                </div>
+            </div>
 
+            <!-- Teclado Numérico Táctil Virtual -->
+            <div class="glass-panel p-4 rounded-3xl shadow-xl max-w-xs mx-auto w-full">
+                <div class="grid grid-cols-3 gap-2.5">
+                    <button onclick="pressKey('1')" class="key-btn bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold text-xl py-3 rounded-xl border border-slate-700 shadow">1</button>
+                    <button onclick="pressKey('2')" class="key-btn bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold text-xl py-3 rounded-xl border border-slate-700 shadow">2</button>
+                    <button onclick="pressKey('3')" class="key-btn bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold text-xl py-3 rounded-xl border border-slate-700 shadow">3</button>
+                    <button onclick="pressKey('4')" class="key-btn bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold text-xl py-3 rounded-xl border border-slate-700 shadow">4</button>
+                    <button onclick="pressKey('5')" class="key-btn bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold text-xl py-3 rounded-xl border border-slate-700 shadow">5</button>
+                    <button onclick="pressKey('6')" class="key-btn bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold text-xl py-3 rounded-xl border border-slate-700 shadow">6</button>
+                    <button onclick="pressKey('7')" class="key-btn bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold text-xl py-3 rounded-xl border border-slate-700 shadow">7</button>
+                    <button onclick="pressKey('8')" class="key-btn bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold text-xl py-3 rounded-xl border border-slate-700 shadow">8</button>
+                    <button onclick="pressKey('9')" class="key-btn bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold text-xl py-3 rounded-xl border border-slate-700 shadow">9</button>
+                    <button onclick="clearInput()" class="key-btn bg-red-950/40 hover:bg-red-900/50 text-red-300 font-bold text-sm py-3 rounded-xl border border-red-800/50 flex items-center justify-center">C</button>
+                    <button onclick="pressKey('0')" class="key-btn bg-slate-800/80 hover:bg-slate-700/80 text-white font-bold text-xl py-3 rounded-xl border border-slate-700 shadow">0</button>
+                    <button onclick="backspaceInput()" class="key-btn bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 font-bold text-sm py-3 rounded-xl border border-amber-800/50 flex items-center justify-center">
+                        <i class="fa-solid fa-backspace"></i>
+                    </button>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="grid grid-cols-2 gap-2 mt-3">
+                    <button onclick="skipQuestion()" class="py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 flex items-center justify-center gap-1.5 transition">
+                        <span>Saltar</span>
+                        <i class="fa-solid fa-forward text-slate-400"></i>
+                    </button>
+                    <button onclick="submitAnswer()" class="py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-lg flex items-center justify-center gap-1.5 transition">
+                        <span>Confirmar</span>
+                        <i class="fa-solid fa-check"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= 3. PANTALLA DE RESULTADOS ================= -->
+        <section id="screen-results" class="hidden w-full max-w-3xl mx-auto animate-fade-in flex-col gap-6">
+            
+            <!-- Tarjeta Resumen de Nota -->
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl text-center border-indigo-500/30 flex flex-col items-center gap-4 relative overflow-hidden shadow-2xl">
+                <div id="result-badge-icon" class="w-20 h-20 rounded-full flex items-center justify-center text-4xl shadow-xl">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+
+                <div class="space-y-1">
+                    <h2 class="text-3xl font-extrabold text-white">Evaluación Final</h2>
+                    <p id="result-rating-title" class="text-lg font-bold text-indigo-300">Resumen</p>
+                </div>
+
+                <!-- Marcador de Nota Base 10 -->
+                <div class="flex items-center gap-6 my-2 bg-slate-900/70 px-6 py-4 rounded-2xl border border-slate-700">
+                    <div class="text-center">
+                        <span class="text-xs font-semibold text-slate-400 block uppercase">Correctas</span>
+                        <span id="results-correct-count" class="text-2xl font-extrabold text-emerald-400">0</span>
+                        <span id="results-total-count" class="text-xs text-slate-400">/ 0</span>
+                    </div>
+                    <div class="h-10 w-px bg-slate-700"></div>
+                    <div class="text-center">
+                        <span class="text-xs font-semibold text-slate-400 block uppercase">Nota Base 10</span>
+                        <span id="results-score-num" class="text-3xl font-black text-amber-400">0,0</span>
+                    </div>
+                </div>
+
+                <!-- Calificación Cualitativa -->
+                <div id="results-badge-pill" class="px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider border">
+                    Cargando...
+                </div>
+            </div>
+
+            <!-- Desglose Interactivo de Respuestas -->
+            <div class="glass-panel p-5 sm:p-6 rounded-3xl space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                    <h3 class="font-bold text-base text-white flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-check text-indigo-400"></i> Desglose de Respuestas
+                    </h3>
+                    <span class="text-xs text-slate-400">Revisión de Aciertos y Errores</span>
+                </div>
+
+                <div id="results-breakdown-list" class="space-y-3 max-h-[320px] overflow-y-auto pr-2">
+                    <!-- Lista generada dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Botones de Navegación Final -->
+            <div class="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+                <button onclick="restartGame()" class="flex-1 px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>Volver a Jugar</span>
+                </button>
+                <button onclick="showStudyScreen()" class="flex-1 px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold rounded-2xl shadow-lg flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span>Repasar Lista</span>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full text-center py-4 text-xs text-slate-400 border-t border-slate-800/80 glass-panel mt-auto">
+        <p>Juego Educativo de Historia de España • Memorización Eficiente</p>
+    </footer>
+
+    <!-- Lógica JavaScript Incorporada -->
+    <script>
+        // Lista completa de acontecimientos y fechas proporcionados
+        const rawEventsList = [
+            { name: "Inicio del Paleolítico", dateStr: "c. 2,5 Ma", numKey: "25" },
+            { name: "Fin del Paleolítico", dateStr: "10000 a.C.", numKey: "10000" },
+            { name: "Inicio del Paleolítico Inferior", dateStr: "c. 2,5 Ma", numKey: "25" },
+            { name: "Fin del Paleolítico Inferior", dateStr: "250.000 a.C.", numKey: "250" },
+            { name: "Inicio del Paleolítico Medio", dateStr: "c. 250.000 a.C.", numKey: "250" },
+            { name: "Fin del Paleolítico Medio", dateStr: "40.000 a.C.", numKey: "40" },
+            { name: "Inicio del Paleolítico Superior", dateStr: "c. 40.000 a.C.", numKey: "40" },
+            { name: "Fin del Paleolítico Superior", dateStr: "10.000 a.C.", numKey: "10000" },
+            { name: "Revolución Neolítica", dateStr: "c. 8.500 a.C.", numKey: "8500" },
+            { name: "Inicio del yacimiento de Los Millares", dateStr: "c. 3200 a.C.", numKey: "3200" },
+            { name: "Fin del yacimiento de Los Millares", dateStr: "2200 a.C.", numKey: "2200" },
+            { name: "Inicio de la cultura de El Argar", dateStr: "c. 2200 a.C.", numKey: "2200" },
+            { name: "Fin de la cultura de El Argar", dateStr: "1550 a.C.", numKey: "1550" },
+            { name: "Asentamiento de los fenicios", dateStr: "s. VIII a. C.", numKey: "8" },
+            { name: "Inicio del reino de Tartessos", dateStr: "s. VIII a. C.", numKey: "8" },
+            { name: "Fin del reino de Tartessos", dateStr: "s. VI a. C.", numKey: "6" },
+            { name: "Declive de Tartessos", dateStr: "s. VI a. C.", numKey: "6" },
+            { name: "Llegada de los griegos", dateStr: "s. VI a. C.", numKey: "6" },
+            { name: "Llegada de los cartagineses", dateStr: "s. VI a. C.", numKey: "6" },
+            { name: "Inicio de la conquista romana de Hispania", dateStr: "218 a.C.", numKey: "218" },
+            { name: "Fin de la conquista romana de Hispania", dateStr: "19 a.C.", numKey: "19" },
+            { name: "Inicio de la primera fase de la conquista romana", dateStr: "218 a.C.", numKey: "218" },
+            { name: "Fin de la primera fase de la conquista romana", dateStr: "197 a.C.", numKey: "197" },
+            { name: "Inicio de la segunda fase de la conquista romana", dateStr: "197 a.C.", numKey: "197" },
+            { name: "Fin de la segunda fase de la conquista romana", dateStr: "133 a.C.", numKey: "133" },
+            { name: "Conquista de Numancia", dateStr: "133 a.C.", numKey: "133" },
+            { name: "Inicio de la tercera fase de la conquista romana", dateStr: "29 a.C.", numKey: "29" },
+            { name: "Fin de la tercera fase de la conquista romana", dateStr: "19 a.C.", numKey: "19" },
+            { name: "Inicio del proceso de unificación del reino visigodo de Toledo", dateStr: "s. VI", numKey: "6" },
+            { name: "Fin del proceso de unificación del reino visigodo de Toledo", dateStr: "s. VII", numKey: "7" },
+            { name: "Anexión del reino suevo", dateStr: "585", numKey: "585" },
+            { name: "III Concilio de Toledo", dateStr: "589", numKey: "589" },
+            { name: "Expulsión de los bizantinos del sur peninsular por Suintila", dateStr: "624", numKey: "624" },
+            { name: "Promulgación del Liber Iudiciorum por Reccesvinto", dateStr: "654", numKey: "654" },
+            { name: "Colapso del reino visigodo y derrota en Guadalete", dateStr: "711", numKey: "711" },
+            { name: "Rápida expansión musulmana tras el año 711", dateStr: "711", numKey: "711" },
+            { name: "Inicio del Emirato dependiente", dateStr: "711", numKey: "711" },
+            { name: "Fin del Emirato dependiente", dateStr: "756", numKey: "756" },
+            { name: "Inicio del Emirato independiente", dateStr: "756", numKey: "756" },
+            { name: "Fin del Emirato independiente", dateStr: "929", numKey: "929" },
+            { name: "Proclamación del Califato de Córdoba por Abderramán III", dateStr: "929", numKey: "929" },
+            { name: "Muerte de Almanzor", dateStr: "1002", numKey: "1002" },
+            { name: "Muerte del hijo de Almanzor e inicio de la fitna o guerra civil", dateStr: "1002", numKey: "1002" },
+            { name: "Abolición del califato por la asamblea de notables y fragmentación en reinos de taifas", dateStr: "1031", numKey: "1031" },
+            { name: "Caída de Toledo", dateStr: "1085", numKey: "1085" },
+            { name: "Inicio de la intervención de los almorávides en al-Ándalus", dateStr: "1086", numKey: "1086" },
+            { name: "Inicio del periodo de los almohades", dateStr: "1147", numKey: "1147" },
+            { name: "Batalla de Alarcos", dateStr: "1195", numKey: "1195" },
+            { name: "Batalla de Las Navas de Tolosa", dateStr: "1212", numKey: "1212" },
+            { name: "Derrota almohade en Las Navas de Tolosa", dateStr: "1212", numKey: "1212" },
+            { name: "Conquista de Córdoba", dateStr: "1236", numKey: "1236" },
+            { name: "Fundación del reino nazarí de Granada por Muhammad I", dateStr: "1238", numKey: "1238" },
+            { name: "Conquista de Sevilla", dateStr: "1248", numKey: "1248" },
+            { name: "Creación de La Mesta por Alfonso X el Sabio", dateStr: "1273", numKey: "1273" },
+            { name: "Inicio del sistema de presura o aprisio", dateStr: "s. VIII", numKey: "8" },
+            { name: "Fin del sistema de presura o aprisio", dateStr: "s. X", numKey: "10" },
+            { name: "Inicio de la repoblación concejil", dateStr: "s. XI", numKey: "11" },
+            { name: "Fin de la repoblación concejil", dateStr: "s. XII", numKey: "12" },
+            { name: "Repartimientos", dateStr: "s. XIII", numKey: "13" },
+            { name: "Crecimiento demográfico y expansión urbana", dateStr: "s. XIII", numKey: "13" },
+            { name: "Crisis de la Peste Negra, malas cosechas y guerras", dateStr: "s. XIV", numKey: "14" },
+            { name: "Autorización para crear la Inquisición", dateStr: "1478", numKey: "1478" },
+            { name: "Conquista del reino nazarí de Granada por los Reyes Católicos", dateStr: "1492", numKey: "1492" },
+            { name: "Culminación de la Reconquista", dateStr: "1492", numKey: "1492" },
+            { name: "Conquista de Granada", dateStr: "1492", numKey: "1492" },
+            { name: "Primer viaje de Colón", dateStr: "1492", numKey: "1492" },
+            { name: "Edicto de Granada que ordenó la expulsión de los judíos", dateStr: "1492", numKey: "1492" },
+            { name: "Descubrimiento de América", dateStr: "1492", numKey: "1492" },
+            { name: "Tratado de Tordesillas", dateStr: "1494", numKey: "1494" },
+            { name: "Conquista de Canarias", dateStr: "1496", numKey: "1496" },
+            { name: "Conversión obligatoria a los mudéjares de Castilla", dateStr: "1502", numKey: "1502" },
+            { name: "Incorporación de Navarra a la Corona", dateStr: "1515", numKey: "1515" },
+            { name: "Ejecución de los líderes comuneros en Villalar", dateStr: "1521", numKey: "1521" },
+            { name: "Conversión obligatoria a los mudéjares de Aragón", dateStr: "1526", numKey: "1526" },
+            { name: "Derrota en Villalar", dateStr: "1551", numKey: "1551" },
+            { name: "Paz de Augsburgo", dateStr: "1555", numKey: "1555" },
+            { name: "Tratado de Cateau-Cambrésis", dateStr: "1559", numKey: "1559" },
+            { name: "Inicio de la rebelión de los moriscos de las Alpujarras", dateStr: "1568", numKey: "1568" },
+            { name: "Fin de la rebelión de los moriscos de las Alpujarras", dateStr: "1571", numKey: "1571" },
+            { name: "Batalla de Lepanto", dateStr: "1571", numKey: "1571" },
+            { name: "Alteraciones de Aragón", dateStr: "1591", numKey: "1591" },
+            { name: "Expulsión de los moriscos", dateStr: "1609", numKey: "1609" },
+            { name: "Expulsión de los moriscos bajo Felipe III", dateStr: "1609", numKey: "1609" },
+            { name: "Periodo de la crisis del siglo XVII", dateStr: "s. XVII", numKey: "17" },
+            { name: "Crisis y rebeliones de Cataluña y Portugal", dateStr: "1640", numKey: "1640" },
+            { name: "Paz de Westfalia", dateStr: "1648", numKey: "1648" },
+            { name: "Paz de los Pirineos", dateStr: "1659", numKey: "1659" },
+            { name: "Inicio de la Guerra de Sucesión española", dateStr: "1701", numKey: "1701" },
+            { name: "Inicio de los Decretos de Nueva Planta", dateStr: "1707", numKey: "1707" },
+            { name: "Tratado de Utrecht", dateStr: "1713", numKey: "1713" },
+            { name: "Fin de la Guerra de Sucesión española", dateStr: "1714", numKey: "1714" },
+            { name: "Acuerdos de Rastatt", dateStr: "1714", numKey: "1714" },
+            { name: "Fin de los Decretos de Nueva Planta", dateStr: "1716", numKey: "1716" },
+            { name: "Primer pacto de familia", dateStr: "1733", numKey: "1733" },
+            { name: "Segundo pacto de familia", dateStr: "1743", numKey: "1743" },
+            { name: "Catastro de Ensenada", dateStr: "1749", numKey: "1749" },
+            { name: "Tercer pacto de familia", dateStr: "1761", numKey: "1761" },
+            { name: "Motín de Esquilache", dateStr: "1766", numKey: "1766" },
+            { name: "Expulsión de los jesuitas", dateStr: "1767", numKey: "1767" },
+            { name: "Creación del Virreinato del Río de la Plata", dateStr: "1776", numKey: "1776" },
+            { name: "Libre Comercio con América", dateStr: "1778", numKey: "1778" },
+            { name: "Informe sobre la Ley Agraria de Jovellanos", dateStr: "1795", numKey: "1795" }
+        ];
+
+        // Estado global del juego
+        let selectedQuizLength = 'all';
+        let currentGameEvents = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let userAnswers = [];
+
+        // Elementos DOM
+        const screenStudy = document.getElementById('screen-study');
+        const screenGame = document.getElementById('screen-game');
+        const screenResults = document.getElementById('screen-results');
+        const studyListContainer = document.getElementById('study-list');
+        const numericInput = document.getElementById('numeric-input');
+
+        // Extraer números clave para comparación
+        function extractNumbers(str) {
+            if (!str) return "";
+            const romanMatch = str.match(/s\.\s*([IVXLCDM]+)/i);
+            if (romanMatch) {
+                return romanToNum(romanMatch[1].toUpperCase()).toString();
+            }
+            return str.replace(/[^0-9]/g, '');
+        }
+
+        function romanToNum(roman) {
+            const map = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+            let num = 0;
+            for (let i = 0; i < roman.length; i++) {
+                const current = map[roman[i]];
+                const next = map[roman[i + 1]];
+                if (next && current < next) {
+                    num -= current;
+                } else {
+                    num += current;
+                }
+            }
+            return num;
+        }
+
+        // Inicializar aplicación
+        function initApp() {
+            document.getElementById('total-events-count').innerText = rawEventsList.length;
+            renderStudyList();
+
+            // Captura de teclado físico
+            document.addEventListener('keydown', (e) => {
+                if (screenGame.classList.contains('hidden')) return;
+
+                if (e.key >= '0' && e.key <= '9') {
+                    pressKey(e.key);
+                } else if (e.key === 'Backspace') {
+                    backspaceInput();
+                } else if (e.key === 'Enter') {
+                    submitAnswer();
+                } else if (e.key === 'Escape' || e.key === 'c' || e.key === 'C') {
+                    clearInput();
+                }
+            });
+        }
+
+        // Renderizar lista en modo estudio
+        function renderStudyList() {
+            studyListContainer.innerHTML = rawEventsList.map((item, index) => `
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-800/40 hover:bg-slate-800/80 border border-slate-700/50 transition">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold text-slate-500 w-6 text-right">${index + 1}.</span>
+                        <span class="font-medium text-sm text-slate-200">${item.name}</span>
+                    </div>
+                    <span class="text-xs font-bold px-3 py-1 bg-indigo-950/80 text-indigo-300 rounded-lg border border-indigo-700/40">
+                        ${item.dateStr}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        // Selector de cantidad de preguntas
+        function setQuizLength(len) {
+            selectedQuizLength = len;
+            ['10', '20', 'all'].forEach(mode => {
+                const btn = document.getElementById(`btn-mode-${mode}`);
+                if (btn) {
+                    if (mode == len) {
+                        btn.className = "flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold transition border border-indigo-500/50 bg-indigo-600 text-white shadow-lg shadow-indigo-600/30";
+                    } else {
+                        btn.className = "flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-700 hover:border-indigo-500 bg-slate-800 text-slate-300";
+                    }
+                }
+            });
+        }
+
+        // Mezclar array (Fisher-Yates)
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            const newArr = [...array];
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [newArr[currentIndex], newArr[randomIndex]] = [newArr[randomIndex], newArr[currentIndex]];
+            }
+            return newArr;
+        }
+
+        // Iniciar Juego
+        function startGame() {
+            let shuffled = shuffle(rawEventsList);
+            if (selectedQuizLength === 10) {
+                currentGameEvents = shuffled.slice(0, 10);
+            } else if (selectedQuizLength === 20) {
+                currentGameEvents = shuffled.slice(0, 20);
+            } else {
+                currentGameEvents = shuffled;
+            }
+
+            currentQuestionIndex = 0;
+            score = 0;
+            userAnswers = [];
+
+            screenStudy.classList.add('hidden');
+            screenResults.classList.add('hidden');
+            screenGame.classList.remove('hidden');
+            screenGame.classList.add('flex');
+
+            document.getElementById('game-status-pill').classList.remove('hidden');
+
+            loadQuestion();
+        }
+
+        // Cargar pregunta actual
+        function loadQuestion() {
+            const currentItem = currentGameEvents[currentQuestionIndex];
+            
+            document.getElementById('game-current-step').innerText = currentQuestionIndex + 1;
+            document.getElementById('game-total-steps').innerText = currentGameEvents.length;
+            document.getElementById('game-live-score').innerText = score;
+
+            const pct = ((currentQuestionIndex) / currentGameEvents.length) * 100;
+            document.getElementById('game-progress-bar').style.width = `${pct}%`;
+
+            document.getElementById('question-event-name').innerText = currentItem.name;
+
+            const helper = document.getElementById('helper-note');
+            if (currentItem.dateStr.includes('s.')) {
+                helper.innerText = "Pista: Escribe el número del siglo (Ej. s. VIII -> 8, s. XVII -> 17)";
+            } else if (currentItem.dateStr.includes('Ma')) {
+                helper.innerText = "Pista: Número clave (Ej. 2,5 Ma -> 25)";
+            } else {
+                helper.innerText = "Escribe únicamente los números del año (máx. 4 dígitos)";
+            }
+
+            clearInput();
+        }
+
+        // Teclado virtual
+        function pressKey(num) {
+            if (numericInput.value.length < 4) {
+                numericInput.value += num;
+            }
+        }
+
+        function clearInput() {
+            numericInput.value = "";
+        }
+
+        function backspaceInput() {
+            numericInput.value = numericInput.value.slice(0, -1);
+        }
+
+        // Validación de respuestas
+        function isAnswerCorrect(userVal, targetItem) {
+            const cleanUser = userVal.trim();
+            if (!cleanUser) return false;
+
+            const targetDigits = extractNumbers(targetItem.dateStr);
+            const targetKey = targetItem.numKey;
+
+            return (cleanUser === targetDigits || cleanUser === targetKey);
+        }
+
+        // Enviar respuesta
+        function submitAnswer() {
+            const inputVal = numericInput.value;
+            const currentItem = currentGameEvents[currentQuestionIndex];
+            const correct = isAnswerCorrect(inputVal, currentItem);
+
+            if (correct) {
+                score++;
+            }
+
+            userAnswers.push({
+                event: currentItem.name,
+                correctDate: currentItem.dateStr,
+                userEntered: inputVal || "Sin respuesta",
+                isCorrect: correct
+            });
+
+            nextStep();
+        }
+
+        // Saltar pregunta
+        function skipQuestion() {
+            const currentItem = currentGameEvents[currentQuestionIndex];
+            userAnswers.push({
+                event: currentItem.name,
+                correctDate: currentItem.dateStr,
+                userEntered: "Saltada",
+                isCorrect: false
+            });
+            nextStep();
+        }
+
+        function nextStep() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < currentGameEvents.length) {
+                loadQuestion();
+            } else {
+                finishGame();
+            }
+        }
+
+        // Finalizar y calcular nota sobre 10
+        function finishGame() {
+            screenGame.classList.add('hidden');
+            screenGame.classList.remove('flex');
+            screenResults.classList.remove('hidden');
+            screenResults.classList.add('flex');
+
+            const total = currentGameEvents.length;
+            const rawScore = (score / total) * 10;
+            const finalGrade = Math.round(rawScore * 10) / 10;
+
+            document.getElementById('results-correct-count').innerText = score;
+            document.getElementById('results-total-count').innerText = `/ ${total}`;
+            document.getElementById('results-score-num').innerText = finalGrade.toFixed(1).replace('.', ',');
+
+            const badgeIcon = document.getElementById('result-badge-icon');
+            const ratingTitle = document.getElementById('result-rating-title');
+            const badgePill = document.getElementById('results-badge-pill');
+
+            let category = "";
+            let pillClasses = "";
+
+            if (finalGrade < 5.0) {
+                category = "Suspenso (0 a 4,9)";
+                ratingTitle.innerText = "Debes Repasar Más";
+                badgeIcon.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400"></i>`;
+                badgeIcon.className = "w-20 h-20 rounded-full flex items-center justify-center text-4xl shadow-xl bg-rose-500/10 border-2 border-rose-500/40";
+                pillClasses = "bg-rose-950/80 text-rose-300 border-rose-700/50";
+            } else if (finalGrade < 7.0) {
+                category = "Aprobado (5 a 6,9)";
+                ratingTitle.innerText = "¡Buen Intento!";
+                badgeIcon.innerHTML = `<i class="fa-solid fa-thumbs-up text-blue-400"></i>`;
+                badgeIcon.className = "w-20 h-20 rounded-full flex items-center justify-center text-4xl shadow-xl bg-blue-500/10 border-2 border-blue-500/40";
+                pillClasses = "bg-blue-950/80 text-blue-300 border-blue-700/50";
+            } else if (finalGrade < 9.0) {
+                category = "Notable (7 a 8,9)";
+                ratingTitle.innerText = "¡Gran Nivel!";
+                badgeIcon.innerHTML = `<i class="fa-solid fa-award text-emerald-400"></i>`;
+                badgeIcon.className = "w-20 h-20 rounded-full flex items-center justify-center text-4xl shadow-xl bg-emerald-500/10 border-2 border-emerald-500/40";
+                pillClasses = "bg-emerald-950/80 text-emerald-300 border-emerald-700/50";
+            } else if (finalGrade < 10.0) {
+                category = "Sobresaliente (9 a 9,9)";
+                ratingTitle.innerText = "¡Excelente Conocimiento!";
+                badgeIcon.innerHTML = `<i class="fa-solid fa-star text-amber-400"></i>`;
+                badgeIcon.className = "w-20 h-20 rounded-full flex items-center justify-center text-4xl shadow-xl bg-amber-500/10 border-2 border-amber-500/40";
+                pillClasses = "bg-amber-950/80 text-amber-300 border-amber-700/50";
+            } else {
+                category = "Perfecto (10)";
+                ratingTitle.innerText = "¡Dominio Histórico Absoluto!";
+                badgeIcon.innerHTML = `<i class="fa-solid fa-crown text-yellow-300"></i>`;
+                badgeIcon.className = "w-20 h-20 rounded-full flex items-center justify-center text-4xl shadow-xl bg-yellow-500/20 border-2 border-yellow-400 glow-effect";
+                pillClasses = "bg-yellow-500/20 text-yellow-300 border-yellow-400";
+                
+                try {
+                    confetti({
+                        particleCount: 150,
+                        spread: 90,
+                        origin: { y: 0.6 }
+                    });
+                } catch(e) {}
+            }
+
+            badgePill.innerText = category;
+            badgePill.className = `px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider border ${pillClasses}`;
+
+            // Renderizar desglose
+            const breakdownContainer = document.getElementById('results-breakdown-list');
+            breakdownContainer.innerHTML = userAnswers.map((item) => `
+                <div class="p-3.5 rounded-xl ${item.isCorrect ? 'bg-emerald-950/20 border-emerald-800/40' : 'bg-rose-950/20 border-rose-800/40'} border flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div class="flex items-start gap-2.5">
+                        <i class="fa-solid ${item.isCorrect ? 'fa-circle-check text-emerald-400' : 'fa-circle-xmark text-rose-400'} mt-1 text-base"></i>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-200 leading-snug">${item.event}</p>
+                            <span class="text-xs text-slate-400">Respuesta oficial: <strong class="text-indigo-300">${item.correctDate}</strong></span>
+                        </div>
+                    </div>
+                    <div class="text-left sm:text-right pl-7 sm:pl-0">
+                        <span class="text-xs text-slate-400 block">Tu respuesta:</span>
+                        <span class="text-xs font-mono font-bold ${item.isCorrect ? 'text-emerald-400' : 'text-rose-400'}">${item.userEntered}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        function showStudyScreen() {
+            screenResults.classList.add('hidden');
+            screenResults.classList.remove('flex');
+            screenGame.classList.add('hidden');
+            screenGame.classList.remove('flex');
+            screenStudy.classList.remove('hidden');
+            document.getElementById('game-status-pill').classList.add('hidden');
+        }
+
+        window.onload = function() {
+            initApp();
+        };
+    </script>
 </body>
-
 </html>
